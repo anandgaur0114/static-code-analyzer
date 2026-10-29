@@ -14,7 +14,6 @@ std::string ReportGenerator::getSourceLineSnippet(int lineNumber) const {
 }
 
 void ReportGenerator::printConsole(std::ostream& os, bool useAnsi) const {
-    // ANSI Color codes
     const std::string RESET   = useAnsi ? "\033[0m" : "";
     const std::string BOLD    = useAnsi ? "\033[1m" : "";
     const std::string RED     = useAnsi ? "\033[31m" : "";
@@ -36,7 +35,6 @@ void ReportGenerator::printConsole(std::ostream& os, bool useAnsi) const {
        << data_.getAverageComplexity() << "\n";
     os << "----------------------------------------------------------------------\n";
 
-    // Accuracy Score & Grade Display
     std::string gradeColor = GREEN;
     if (data_.accuracy.grade == "A+" || data_.accuracy.grade == "A") gradeColor = GREEN;
     else if (data_.accuracy.grade == "B") gradeColor = CYAN;
@@ -48,7 +46,6 @@ void ReportGenerator::printConsole(std::ostream& os, bool useAnsi) const {
        << data_.accuracy.score << "% " << "[GRADE " << data_.accuracy.grade << "]" << RESET << "\n";
     os << BOLD << "QUALITY RATING    : " << RESET << data_.accuracy.description << "\n";
 
-    // Deductions Breakdown
     if (!data_.accuracy.deductions.empty()) {
         os << GRAY << "Score Deductions  :\n";
         for (const auto& d : data_.accuracy.deductions) {
@@ -68,7 +65,6 @@ void ReportGenerator::printConsole(std::ostream& os, bool useAnsi) const {
        << BLUE << infos << " Info" << RESET << "\n";
     os << "----------------------------------------------------------------------\n";
 
-    // Function Metrics Table
     if (!data_.functions.empty()) {
         os << "\n" << BOLD << MAGENTA << "FUNCTION METRICS & COMPLEXITY TABLE:" << RESET << "\n";
         os << GRAY << "--------------------------------------------------------------------------------\n" << RESET;
@@ -96,7 +92,6 @@ void ReportGenerator::printConsole(std::ostream& os, bool useAnsi) const {
         os << GRAY << "--------------------------------------------------------------------------------\n\n" << RESET;
     }
 
-    // Issues Detail List
     if (!data_.issues.empty()) {
         os << BOLD << "DETECTED CODE ISSUES & ERRORS (" << data_.issues.size() << "):" << RESET << "\n";
         os << "----------------------------------------------------------------------\n";
@@ -115,7 +110,7 @@ void ReportGenerator::printConsole(std::ostream& os, bool useAnsi) const {
                << " | " << BOLD << issue.category << RESET << "\n"
                << "          " << issue.message << "\n";
 
-            // If snippet exists, show it with pointer
+            
             std::string snippet = getSourceLineSnippet(issue.line);
             if (!snippet.empty()) {
                 os << GRAY << "          " << issue.line << " | " << snippet << RESET << "\n";

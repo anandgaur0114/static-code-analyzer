@@ -1,12 +1,11 @@
 #include "SymbolTable.h"
 
 SymbolTable::SymbolTable() {
-    enterScope(); // Global scope
+    enterScope(); 
     initBuiltins();
 }
 
 void SymbolTable::initBuiltins() {
-    // Standard library and common symbols
     static const std::vector<std::string> builtins = {
         "cout", "cin", "cerr", "endl", "std", "string", "vector",
         "printf", "scanf", "malloc", "free", "exit", "nullptr",
@@ -15,7 +14,7 @@ void SymbolTable::initBuiltins() {
 
     for (const auto& b : builtins) {
         SymbolInfo info(b, "builtin", 0, 0, false, false, true);
-        info.isUsed = true; // Builtins are always marked used
+        info.isUsed = true; 
         scopes_.front()[b] = info;
     }
 }
@@ -27,11 +26,9 @@ void SymbolTable::enterScope() {
 void SymbolTable::exitScope(std::vector<AnalysisIssue>& issues) {
     if (scopes_.empty()) return;
 
-    // Check for unused variables in the scope being exited
     const auto& currentScope = scopes_.back();
     for (const auto& pair : currentScope) {
         const auto& sym = pair.second;
-        // Don't warn for built-in or dummy identifiers (like _ or unused markers)
         if (!sym.isUsed && !sym.isFunction && sym.name != "_" && sym.name != "argc" && sym.name != "argv") {
             AnalysisIssue issue;
             issue.severity = IssueSeverity::WARNING;
@@ -53,7 +50,6 @@ bool SymbolTable::declare(const SymbolInfo& symbol, std::vector<AnalysisIssue>& 
     auto& currentScope = scopes_.back();
     auto it = currentScope.find(symbol.name);
     if (it != currentScope.end()) {
-        // Redefined in the same scope
         AnalysisIssue issue;
         issue.severity = IssueSeverity::ERROR;
         issue.category = "Redeclaration";

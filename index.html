@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C++ Static Code Analyzer & Quality Scorer | Compiler Design System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+
+    <!-- ======================================================================
+         Header & Global Status
+         ====================================================================== -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand-section">
+                <div class="brand-icon">⚡</div>
+                <div>
+                    <h1 class="brand-title">
+                        C++ Static Code Analyzer
+                        <span class="brand-badge">Compiler Design Lab</span>
+                    </h1>
+                    <p class="brand-subtitle">
+                        Hand-written DFA Lexer &bull; LL(1) Recursive Descent Parser &bull; Scoped Symbol Table &bull; McCabe V(G) Metric &bull; Accuracy Scorer
+                    </p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="badge-tag">
+                    <span class="status-dot"></span>
+                    <span>Client-Side Engine: Active</span>
+                </div>
+                <div class="badge-tag">
+                    <span>Target: ISO C++17</span>
+                </div>
+                <a href="https://github.com/anandgaur0114/static-code-analyzer" target="_blank" class="btn btn-secondary btn-sm" title="View Project on GitHub">
+                    <span>GitHub Repo</span> &rarr;
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ======================================================================
+         Main Two-Column Workspace
+         ====================================================================== -->
+    <main class="main-layout">
+
+        <!-- ==================================================================
+             Left Column: Interactive Code Studio
+             ================================================================== -->
+        <section class="panel editor-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">&lt;/&gt;</span>
+                    <span>Interactive C++ Code Studio</span>
+                </div>
+                <div class="editor-controls">
+                    <select id="preset-select" class="select-control" title="Load Sample Code Preset">
+                        <option value="clean">Preset: Clean Code (100% Pass / Grade A+)</option>
+                        <option value="issues">Preset: Issues Sample (Dead Code, Undeclared, Nesting)</option>
+                        <option value="complex">Preset: Complex Logic (McCabe V(G) &gt; 10)</option>
+                        <option value="syntax">Preset: Syntax Errors (Parser Panic Recovery)</option>
+                    </select>
+
+                    <label for="file-upload" class="btn btn-secondary btn-sm" title="Upload C++ Source File">
+                        <span>Upload File</span>
+                        <input type="file" id="file-upload" accept=".cpp,.c,.h,.hpp,.txt" style="display: none;">
+                    </label>
+
+                    <button id="btn-copy" class="btn btn-secondary btn-sm" title="Copy Code to Clipboard">Copy</button>
+                    <button id="btn-clear" class="btn btn-danger btn-sm" title="Clear Editor">Clear</button>
+                    <button id="btn-run" class="btn btn-primary btn-pulse" title="Run Static Code Analysis (Ctrl+Enter)">
+                        <span>⚡ Run Analysis</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="editor-wrapper">
+                <div id="editor-gutter" class="editor-gutter">1</div>
+                <textarea id="code-editor" class="code-textarea" spellcheck="false" placeholder="// Enter or paste your C++ code here..."></textarea>
+            </div>
+
+            <div class="editor-footer">
+                <span id="status-cursor">Ln 1, Col 1</span>
+                <span>Shortcut: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to Analyze</span>
+                <span id="status-stats">Lines: 0 | Chars: 0</span>
+            </div>
+        </section>
+
+        <!-- ==================================================================
+             Right Column: Compiler Diagnostics & Evaluation Suite
+             ================================================================== -->
+        <section class="panel diagnostics-panel">
+            <!-- Tab Navigation Header -->
+            <nav class="tabs-header">
+                <button class="tab-btn active" data-tab="tab-overview">
+                    <span>🎯 Overview & Score</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-diagnostics">
+                    <span>⚠️ Diagnostics</span>
+                    <span id="badge-issues-count" class="tab-badge">0</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-tokens">
+                    <span>🔠 Token Stream</span>
+                    <span id="badge-tokens-count" class="tab-badge">0</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-ast">
+                    <span>🌳 AST Hierarchy</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-terminal">
+                    <span>💻 Terminal Output</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-architecture">
+                    <span>📘 Compiler Design</span>
+                </button>
+            </nav>
+
+            <!-- Tab 1: Overview & Accuracy Gauge -->
+            <div id="tab-overview" class="tab-content active">
+                <div class="overview-grid">
+                    <!-- Verdict Banner -->
+                    <div id="verdict-banner" class="verdict-banner verdict-passed">
+                        <div>
+                            <div class="verdict-title">
+                                <span>✓</span>
+                                <span>STATIC ANALYSIS PASSED - ZERO VIOLATIONS</span>
+                            </div>
+                            <div class="verdict-desc">Outstanding (Clean, Production-Ready Code)</div>
+                        </div>
+                        <div class="verdict-grade-pill">A+</div>
+                    </div>
+
+                    <!-- Score Radial Gauge & KPI Cards -->
+                    <div class="score-kpi-container">
+                        <div class="radial-gauge-wrapper">
+                            <svg class="gauge-svg" viewBox="0 0 100 100">
+                                <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
+                                <circle id="gauge-progress-circle" class="gauge-progress" cx="50" cy="50" r="45"></circle>
+                                <g class="gauge-text-group">
+                                    <text id="gauge-score-value" class="gauge-score-text" x="50" y="52">100%</text>
+                                    <text class="gauge-label-text" x="50" y="68">ACCURACY</text>
+                                </g>
+                            </svg>
+                        </div>
+
+                        <div class="kpi-cards-grid">
+                            <div class="kpi-card errors">
+                                <span class="kpi-label">Errors</span>
+                                <span id="kpi-errors" class="kpi-value">0</span>
+                            </div>
+                            <div class="kpi-card warnings">
+                                <span class="kpi-label">Warnings</span>
+                                <span id="kpi-warnings" class="kpi-value">0</span>
+                            </div>
+                            <div class="kpi-card complexity">
+                                <span class="kpi-label">Avg Complexity</span>
+                                <span id="kpi-complexity" class="kpi-value">1.8</span>
+                            </div>
+                            <div class="kpi-card functions">
+                                <span class="kpi-label">Functions</span>
+                                <span id="kpi-functions" class="kpi-value">5</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Score Deductions Breakdown -->
+                    <div class="section-card">
+                        <div class="section-card-header">
+                            <span>Accuracy Score Deduction Breakdown</span>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary);">Base Score: 100.0%</span>
+                        </div>
+                        <ul id="deductions-list" class="deduction-list">
+                            <li class="deduction-item" style="color: var(--color-success); font-weight: 600;">
+                                <span>✓ Perfect Code Quality - No penalties applied (100.0% accuracy maintained)</span>
+                                <span class="deduction-points" style="color: var(--color-success);">+0%</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Function Metrics Table -->
+                    <div class="section-card">
+                        <div class="section-card-header">
+                            <span>Function Metrics & Cyclomatic Complexity Table</span>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary);">Thresholds: LOC &le; 50 | Nesting &le; 4 | V(G) &le; 10</span>
+                        </div>
+                        <div class="data-table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Function</th>
+                                        <th>Lines</th>
+                                        <th>LOC</th>
+                                        <th>Nesting</th>
+                                        <th>Complexity V(G)</th>
+                                        <th>Risk Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fn-metrics-body">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Diagnostics & Issues Explorer -->
+            <div id="tab-diagnostics" class="tab-content">
+                <div class="filter-toolbar">
+                    <div class="filter-group">
+                        <button id="filter-all" class="filter-btn active" data-severity="ALL">All (0)</button>
+                        <button id="filter-error" class="filter-btn" data-severity="ERROR">Errors (0)</button>
+                        <button id="filter-warning" class="filter-btn" data-severity="WARNING">Warnings (0)</button>
+                        <button id="filter-info" class="filter-btn" data-severity="INFO">Info (0)</button>
+                    </div>
+                    <input type="text" id="search-issues" class="search-input" placeholder="Filter issues by text...">
+                </div>
+
+                <div id="issues-list-container" class="issues-container">
+                    <!-- Issue cards populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Tab 3: Token Stream Inspector -->
+            <div id="tab-tokens" class="tab-content">
+                <div class="section-card-header" style="margin-bottom: 0.75rem; border-radius: var(--radius-sm);">
+                    <span>DFA Tokenizer Output Stream (Lexical Tokens)</span>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Coordinate Tracking: Line &amp; Column</span>
+                </div>
+                <div class="table-scroll-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Line</th>
+                                <th>Col</th>
+                                <th>Token Type</th>
+                                <th>Subtype</th>
+                                <th>Lexeme</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tokens-table-body">
+                            <!-- Tokens populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 4: AST Hierarchy Explorer -->
+            <div id="tab-ast" class="tab-content">
+                <div class="section-card-header" style="margin-bottom: 0.75rem; border-radius: var(--radius-sm);">
+                    <span>Abstract Syntax Tree (AST) Hierarchy</span>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">LL(1) Recursive Descent Grammar Tree</span>
+                </div>
+                <div id="ast-tree-container" class="ast-container">
+                    <!-- AST nodes tree populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Tab 5: Terminal Output View -->
+            <div id="tab-terminal" class="tab-content">
+                <div class="terminal-window">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="terminal-dot dot-red"></span>
+                            <span class="terminal-dot dot-yellow"></span>
+                            <span class="terminal-dot dot-green"></span>
+                        </div>
+                        <div class="terminal-title">Static Code Analyzer &bull; Terminal CLI Output Simulation</div>
+                        <button id="btn-copy-terminal" class="btn btn-secondary btn-sm">Copy Output</button>
+                    </div>
+                    <pre id="terminal-content" class="terminal-body"></pre>
+                </div>
+            </div>
+
+            <!-- Tab 6: Compiler Design Architecture (Viva Reference) -->
+            <div id="tab-architecture" class="tab-content">
+                <div class="arch-grid">
+                    <div class="arch-card">
+                        <span class="arch-step-num">1</span>
+                        <h4>Phase 1: Lexical Analysis (DFA Lexer)</h4>
+                        <p>Scans raw characters and tokenizes keywords, identifiers, numeric literals, strings, and operators using a state machine with full line and column coordinate tracking.</p>
+                    </div>
+                    <div class="arch-card">
+                        <span class="arch-step-num">2</span>
+                        <h4>Phase 2: Syntax Analysis (LL(1) Parser)</h4>
+                        <p>Implements recursive descent parsing with operator precedence climbing for expressions. Builds an Abstract Syntax Tree (AST) with panic-mode error recovery.</p>
+                    </div>
+                    <div class="arch-card">
+                        <span class="arch-step-num">3</span>
+                        <h4>Phase 3: Scoped Symbol Table</h4>
+                        <p>Manages nested lexical scopes with a stack of hash tables. Handles variable declaration, shadowing, resolution, and detects unused variables on scope exit.</p>
+                    </div>
+                    <div class="arch-card">
+                        <span class="arch-step-num">4</span>
+                        <h4>Phase 4: Semantic Analysis & Dead Code</h4>
+                        <p>Traverses AST to detect undeclared variables, variable redeclarations, and unreachable dead code following return, break, or continue statements.</p>
+                    </div>
+                    <div class="arch-card">
+                        <span class="arch-step-num">5</span>
+                        <h4>Phase 5: McCabe Cyclomatic Complexity</h4>
+                        <p>Computes \(V(G) = P + 1\), where \(P\) counts decision points: <code>if</code>, <code>while</code>, <code>for</code>, and short-circuit operators <code>&amp;&amp;</code>, <code>||</code>.</p>
+                    </div>
+                    <div class="arch-card">
+                        <span class="arch-step-num">6</span>
+                        <h4>Phase 6: Accuracy Scoring Engine</h4>
+                        <p>Calculates quality score from a base of 100.0%, deducting penalties for syntax errors (-20%), undeclared variables (-15%), dead code (-8%), high complexity (-6%), and unused variables (-5%).</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- ======================================================================
+         Footer
+         ====================================================================== -->
+    <footer class="app-footer">
+        <p>
+            C++ Static Code Analyzer &amp; Accuracy Scorer &bull; Compiler Design Course Project &bull;
+            Department of Computer Science &amp; Engineering &bull;
+            <a href="https://github.com/anandgaur0114/static-code-analyzer" target="_blank">View GitHub Repository</a>
+        </p>
+    </footer>
+
+    <!-- JavaScript Module Ingestion in Proper Dependency Order -->
+    <script src="js/lexer.js"></script>
+    <script src="js/parser.js"></script>
+    <script src="js/analyzer.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

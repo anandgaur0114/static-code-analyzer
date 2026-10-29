@@ -17,12 +17,13 @@
    - [Stage 3: Abstract Syntax Tree (AST) & Visitor Pattern](#stage-3-abstract-syntax-tree-ast--visitor-pattern)
    - [Stage 4: Semantic Analysis & Scoped Symbol Table](#stage-4-semantic-analysis--scoped-symbol-table)
    - [Stage 5: Static Analysis & Metrics Calculation](#stage-5-static-analysis--metrics-calculation)
-3. [Architecture & Project Structure](#architecture--project-structure)
-4. [Building the Project](#building-the-project)
-5. [CLI Usage & Options](#cli-usage--options)
-6. [Terminal Accuracy Report Features](#terminal-accuracy-report-features)
-7. [Test Samples & Validation](#test-samples--validation)
-8. [Viva Voce Q&A Cheat Sheet](#viva-voce-qa-cheat-sheet)
+3. [Interactive Web UI & Real-Time Studio](#interactive-web-ui--real-time-studio)
+4. [Architecture & Project Structure](#architecture--project-structure)
+5. [Building the Project](#building-the-project)
+6. [CLI Usage & Options](#cli-usage--options)
+7. [Terminal Accuracy Report Features](#terminal-accuracy-report-features)
+8. [Test Samples & Validation](#test-samples--validation)
+9. [Viva Voce Q&A Cheat Sheet](#viva-voce-qa-cheat-sheet)
 
 ---
 
@@ -129,6 +130,37 @@ This static code analyzer inspects C/C++ source code and generates structured co
 
 ---
 
+## Interactive Web UI & Real-Time Studio
+
+In addition to the high-performance C++ CLI, this project includes a **pure client-side Web IDE & Diagnostics Studio** built with modern HTML5, CSS3, and JavaScript:
+- **Zero Dependencies**: 100% offline and portable — open [`index.html`](index.html) directly in any web browser without needing Node.js or a web server.
+- **Interactive Code Studio**:
+  - Live synchronized line numbers gutter.
+  - Tab indentation handling (`    `) and real-time cursor coordinate indicator (`Ln X, Col Y`).
+  - One-click presets (`Clean Code`, `Issues Sample`, `Complex Logic`, `Syntax Errors`).
+  - File upload support (`.cpp`, `.c`, `.h`, `.hpp`, `.txt`), code copy, and clear tools.
+  - Keyboard shortcut: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to run analysis immediately.
+- **Evaluation Dashboard**:
+  - **Animated Circular Score Gauge**: Live SVG progress gauge displaying the Accuracy Score (0%–100%) and Grade badge (`A+`, `A`, `B`, `C`, `D`, `F`).
+  - **Itemized Deductions Table**: Fully transparent list showing exact penalties applied for violations.
+  - **Function Metrics Table**: Shows line range, physical LOC, nesting depth, McCabe $V(G)$, and risk badges.
+- **Diagnostics Explorer**:
+  - Filter by severity: `ALL`, `ERROR`, `WARNING`, `INFO`.
+  - Search filter input to search issues in real time.
+  - Code snippet boxes with column caret pointers (`^`) highlighting exact problem locations.
+- **Token Stream Inspector**: Interactive table displaying token index, line, column, token type, subtype, and lexeme.
+- **AST Hierarchy Tree**: Expandable/collapsible graphical representation of the parsed Abstract Syntax Tree.
+- **Terminal Simulation**: Live ANSI-styled dark console view with 1-click clipboard copy.
+
+#### Launching the Web UI:
+Simply double-click [`index.html`](index.html) or open it with your default browser:
+```powershell
+# Open directly in Windows default browser
+Start-Process index.html
+```
+
+---
+
 ## Architecture & Project Structure
 
 ```
@@ -159,11 +191,20 @@ CD/
 │   │   ├── CommandLine.cpp     # CLI parsing
 │   │   └── FileUtils.cpp       # File utilities
 │   └── main.cpp                # Application entry point
+├── index.html                  # Interactive Web UI studio & compiler dashboard
+├── css/
+│   └── style.css               # Modern developer dark theme (GitHub / VS Code)
+├── js/
+│   ├── lexer.js                # DFA tokenizer module with coordinate tracking
+│   ├── parser.js               # LL(1) recursive descent parser & AST generator
+│   ├── analyzer.js             # Semantic scope checker, McCabe V(G) & accuracy scorer
+│   └── app.js                  # UI controller, presets, and terminal simulation
 ├── samples/
 │   ├── test_issues.cpp         # Intentional issues (unused, undeclared, dead code, etc.)
 │   ├── clean_code.cpp          # 100% clean baseline sample
 │   └── complex_logic.cpp       # Intricate branching validating McCabe complexity
-├── sample_report.html          # Pre-generated interactive HTML report
+├── PROJECT_REPORT.docx         # Complete lab practical report with UML diagrams
+├── PROJECT_SYNOPSIS.docx       # Practical synopsis document
 └── README.md                   # Project documentation & viva guide
 ```
 
