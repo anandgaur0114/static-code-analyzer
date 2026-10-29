@@ -2,6 +2,11 @@ Write-Host "====================================================================
 Write-Host "   Launching CodeAccuracy Web Studio (FastAPI + React + Vite)" -ForegroundColor Green
 Write-Host "======================================================================" -ForegroundColor Cyan
 
+# 0. Clean up any lingering processes on ports 5173 and 8000
+Get-NetTCPConnection -LocalPort 5173,8000 -ErrorAction SilentlyContinue | ForEach-Object {
+    Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
+}
+
 # 1. Start FastAPI Backend in background or separate window
 Write-Host "[1/2] Launching FastAPI Backend on http://127.0.0.1:8000..." -ForegroundColor Yellow
 $backendPython = if (Test-Path "$PSScriptRoot\backend\.venv\Scripts\python.exe") { "$PSScriptRoot\backend\.venv\Scripts\python.exe" } else { "python" }

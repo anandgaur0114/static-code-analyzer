@@ -10,7 +10,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body class="bg-dark-900 text-dark-100 antialiased selection:bg-brand-blue/30 selection:text-white min-h-screen">
-    <div id="root"></div>
+    <div id="root">
+      <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; color: #8b949e; font-size: 13px; gap: 10px;">
+        <span style="display: inline-block; width: 14px; height: 14px; border: 2px solid #58a6ff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+        <span>Initializing CodeAccuracy Studio...</span>
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+      </div>
+    </div>
+    <script>
+      window.addEventListener('error', function(e) {
+        var root = document.getElementById('root');
+        if (root) {
+          root.innerHTML = '<div style="padding: 32px; font-family: monospace; color: #f85149; background: #0d1117; min-height: 100vh;">' +
+            '<h2 style="font-size: 18px; margin-bottom: 12px; color: #ff7b72;">⚡ Script Load Error</h2>' +
+            '<p style="color: #c9d1d9; margin-bottom: 12px;">' + (e.message || 'Script failed to load') + '</p>' +
+            '<pre style="background: #161b22; padding: 12px; border-radius: 6px; border: 1px solid #30363d; overflow: auto; color: #8b949e;">' + (e.error && e.error.stack ? e.error.stack : ((e.filename || '') + ':' + (e.lineno || ''))) + '</pre>' +
+            '</div>';
+        }
+      });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
