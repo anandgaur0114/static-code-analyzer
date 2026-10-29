@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   AlertCircle, 
   Layers, 
@@ -81,8 +81,11 @@ export default function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [history, setHistory] = useState([]);
   const [isDark, setIsDark] = useState(true);
+  const [splitRatio, setSplitRatio] = useState(50); // Left panel width in percent (20-80)
+  const [isDragging, setIsDragging] = useState(false);
+  const workspaceRef = useRef(null);
 
-  // Load theme & history from localStorage on startup
+  // Load theme, history & splitRatio from localStorage on startup
   useEffect(() => {
     try {
       const savedTheme = localStorage.getItem('codeaccuracy_theme');
@@ -98,10 +101,55 @@ export default function App() {
       if (savedHistory) {
         setHistory(JSON.parse(savedHistory));
       }
+
+      const savedSplit = localStorage.getItem('codeaccuracy_split_ratio');
+      if (savedSplit) {
+        const parsed = parseFloat(savedSplit);
+        if (!isNaN(parsed) && parsed >= 20 && parsed <= 80) {
+          setSplitRatio(parsed);
+        }
+      }
     } catch (e) {
       console.warn('Could not read from localStorage:', e);
     }
   }, []);
+
+  // Handle dragging the wall between code editor and diagnostics/AST
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e) => {
+      if (!workspaceRef.current) return;
+      const rect = workspaceRef.current.getBoundingClientRect();
+      const relativeX = e.clientX - rect.left;
+      const totalWidth = rect.width;
+      let newRatio = (relativeX / totalWidth) * 100;
+      // Clamp between 20% and 80% to prevent collapsing panels
+      if (newRatio < 20) newRatio = 20;
+      if (newRatio > 80) newRatio = 80;
+      setSplitRatio(Math.round(newRatio * 10) / 10);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      try {
+        localStorage.setItem('codeaccuracy_split_ratio', String(splitRatio));
+      } catch (e) {}
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, splitRatio]);
+
+  const handleStartDrag = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
   // Fetch samples from backend on mount
   useEffect(() => {
@@ -260,10 +308,21 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Two-Panel Workspace */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Panel: Monaco Code Editor (50% Width) */}
-        <div className="w-full lg:w-1/2 h-1/2 lg:h-full">
+      {/* Main Two-Panel Workspace with Draggable Wall */}
+      <div 
+        ref={workspaceRef}
+        className={`flex-1 flex flex-col lg:flex-row overflow-hidden relative ${isDragging ? 'select-none' : ''}`}
+      >
+        {/* Fullscreen transparent shield while dragging to avoid Monaco/SVG stealing mouse events */}
+        {isDragging && (
+          <div className="fixed inset-0 z-50 cursor-col-resize select-none bg-transparent" />
+        )}
+
+        {/* Left Panel: Monaco Code Editor */}
+        <div 
+          style={{ flexBasis: `${splitRatio}%`, maxWidth: `${splitRatio}%` }}
+          className="w-full lg:w-auto h-1/2 lg:h-full flex-shrink-0 flex-grow-0 overflow-hidden"
+        >
           <EditorPanel
             code={code}
             onChange={setCode}
@@ -274,8 +333,25 @@ export default function App() {
           />
         </div>
 
+        {/* Draggable Divider (The Wall) */}
+        <div
+          onMouseDown={handleStartDrag}
+          onDoubleClick={() => setSplitRatio(50)}
+          className="hidden lg:flex w-2 hover:w-2.5 active:w-2.5 bg-dark-800 hover:bg-brand-blue/40 active:bg-brand-blue/80 transition-all cursor-col-resize items-center justify-center border-x border-dark-600/80 group z-20 shrink-0 select-none shadow-sm"
+          title="Drag to resize Code and AST panels (Double-click to reset 50/50)"
+        >
+          <div className="w-1 h-8 rounded-full bg-dark-500 group-hover:bg-brand-blue group-active:bg-white transition-colors flex flex-col items-center justify-center gap-0.5">
+            <span className="w-0.5 h-0.5 rounded-full bg-dark-300"></span>
+            <span className="w-0.5 h-0.5 rounded-full bg-dark-300"></span>
+            <span className="w-0.5 h-0.5 rounded-full bg-dark-300"></span>
+          </div>
+        </div>
+
         {/* Right Panel: Diagnostics & Tabs Suite (50% Width) */}
-        <div className="w-full lg:w-1/2 h-1/2 lg:h-full flex flex-col bg-dark-850 overflow-hidden">
+        <div 
+          style={{ flexBasis: `${100 - splitRatio}%`, maxWidth: `${100 - splitRatio}%` }}
+          className="w-full lg:w-auto h-1/2 lg:h-full flex flex-col bg-dark-850 overflow-hidden flex-1"
+        >
           {/* Navigation Tab Bar */}
           <div className="bg-dark-800 border-b border-dark-600 flex items-center overflow-x-auto select-none scrollbar-none">
             <button
