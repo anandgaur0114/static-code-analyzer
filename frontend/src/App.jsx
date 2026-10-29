@@ -9,7 +9,8 @@ import {
   Terminal,
   RefreshCw,
   Sliders,
-  Sparkles
+  Sparkles,
+  Cpu
 } from 'lucide-react';
 
 import TopBar from './components/TopBar';
