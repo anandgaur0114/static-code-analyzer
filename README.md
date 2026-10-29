@@ -130,6 +130,76 @@ This static code analyzer inspects C/C++ source code and generates structured co
 
 ---
 
+## Full-Stack Web Application (FastAPI + React + Vite + Tailwind)
+
+A modern, production-grade web application converting the static analyzer into an interactive online compiler diagnostics studio.
+
+### Quick Start (One-Click Launch)
+Run the automated launcher script from PowerShell or Command Prompt:
+```cmd
+.\start_app.bat
+```
+or in PowerShell:
+```powershell
+.\start_app.ps1
+```
+This automatically starts both the FastAPI backend (`http://127.0.0.1:8000`) and the React + Vite frontend (`http://localhost:5173`), and opens your browser.
+
+---
+
+### Manual Setup & Execution
+
+#### 1. Backend (FastAPI, Python)
+```powershell
+cd backend
+# Create and activate virtual environment
+uv venv .venv
+.\.venv\Scripts\activate
+
+# Install dependencies
+uv pip install -r requirements.txt
+
+# Start FastAPI server
+python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+```
+* **API Documentation**: Open `http://127.0.0.1:8000/docs` (Swagger UI).
+* **Endpoints**:
+  * `POST /analyze`: Accepts `{"code": "...", "language": "cpp"}` and returns structured JSON (tokens, symbol table, issues with suggestions, metrics, AST tree).
+  * `GET /samples`: Returns pre-configured sample programs with deliberate bugs.
+  * `GET /health`: Health status.
+
+#### 2. Frontend (React + Vite + Tailwind + Monaco Editor)
+```powershell
+cd frontend
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+Open `http://localhost:5173` in your browser.
+
+---
+
+### Frontend Features & Workspace Layout
+* **Top Bar**:
+  * Sample selector dropdown (Clean Code, Compiler Issues, Security Flaws, High Complexity, Syntax Errors).
+  * File upload button (`.cpp`, `.c`, `.h`, `.hpp`).
+  * Run Analysis button (<kbd>Ctrl+Enter</kbd>).
+  * History button: Last 10 analysis runs preserved in `localStorage`.
+  * PDF Export button: Exports complete analysis report to PDF.
+  * Dark / Light theme toggle.
+* **Left Panel (Monaco Editor)**:
+  * Full syntax highlighting, line numbers, and error/warning squiggles with hover hints.
+* **Right Panel (Tabs)**:
+  1. **Metrics & Quality**: Circular Accuracy gauge ($0\% - 100\%$), Grade pill, Recharts severity Pie Chart, Recharts function complexity Bar Chart, deductions list, and function metrics table.
+  2. **Issues Explorer**: Severity badges (`ERROR`, `WARNING`, `INFO`), severity filter buttons with counts, live text search, and actionable suggestions. Click any issue to jump directly to that line in Monaco!
+  3. **Token Stream**: Color-coded token table (Keyword, Identifier, Literal, Operator, Delimiter, Comment) with live search.
+  4. **Scoped Symbol Table**: Sortable table with search across symbol name, type, scope level, and declared line.
+  5. **AST Tree**: Interactive zoomable/pannable D3 hierarchy tree of the parsed Abstract Syntax Tree.
+
+---
+
 ## Interactive Web UI & Real-Time Studio
 
 In addition to the high-performance C++ CLI, this project includes a **pure client-side Web IDE & Diagnostics Studio** built with modern HTML5, CSS3, and JavaScript:

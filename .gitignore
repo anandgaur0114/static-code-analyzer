@@ -16,3 +16,16 @@ build/
 # Temporary and Log files
 *.log
 *.tmp
+
+# Node & Frontend
+node_modules/
+dist/
+.vite/
+
+# Python & Backend
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+env/
+venv/
