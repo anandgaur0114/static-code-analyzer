@@ -70,6 +70,7 @@ class AnalyzeResponse(BaseModel):
     issues: List[IssueItem]
     metrics: MetricsData
     ast: Optional[Dict[str, Any]] = None
+    dfa_trace: Optional[List[Dict[str, Any]]] = None
 
 @app.get("/")
 def root():

@@ -19,6 +19,7 @@ import TokensTab from './components/tabs/TokensTab';
 import SymbolTableTab from './components/tabs/SymbolTableTab';
 import ASTVisualizer from './components/tabs/ASTVisualizer';
 import MetricsTab from './components/tabs/MetricsTab';
+import DFASimulatorTab from './components/tabs/DFASimulatorTab';
 import HistoryModal from './components/HistoryModal';
 import { exportAnalysisPDF } from './utils/exportPdf';
 
@@ -355,6 +356,21 @@ export default function App() {
               <Network className="w-3.5 h-3.5" />
               <span>AST Tree</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('dfa')}
+              className={`px-4 py-2.5 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
+                activeTab === 'dfa'
+                  ? 'border-brand-blue text-brand-blue bg-dark-750'
+                  : 'border-transparent text-dark-400 hover:text-dark-200 hover:bg-dark-700/50'
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5 text-brand-purple" />
+              <span>DFA Animator</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-brand-purple/20 text-brand-purple border border-brand-purple/30">
+                Live
+              </span>
+            </button>
           </div>
 
           {/* Active Tab Body */}
@@ -390,6 +406,13 @@ export default function App() {
 
             {activeTab === 'ast' && (
               <ASTVisualizer ast={analysis?.ast} />
+            )}
+
+            {activeTab === 'dfa' && (
+              <DFASimulatorTab
+                trace={analysis?.dfa_trace || []}
+                sourceCode={code}
+              />
             )}
           </div>
         </div>

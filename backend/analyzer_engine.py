@@ -1477,6 +1477,523 @@ class Analyzer:
             self.visit(node.value)
 
 # ============================================================================
+# Step-by-Step DFA State Machine Simulation Tracer
+# ============================================================================
+
+def generate_dfa_trace(source: str, max_steps: int = 400) -> List[Dict[str, Any]]:
+    """
+    Simulates the Lexical DFA character-by-character, recording all state transitions,
+    lookahead checks, accumulator buffer mutations, and token emissions for step-by-step
+    animated playback.
+    """
+    trace: List[Dict[str, Any]] = []
+    cursor = 0
+    line = 1
+    col = 1
+    length = len(source)
+
+    def char_display(c: str) -> str:
+        if c == " ": return "[SPACE]"
+        if c == "\t": return "\\t"
+        if c == "\n": return "\\n"
+        if c == "\r": return "\\r"
+        if c == "\0": return "EOF"
+        return c
+
+    state = "START"
+    buffer = ""
+    start_line = 1
+    start_col = 1
+
+    while cursor < length and len(trace) < max_steps:
+        ch = source[cursor]
+        next_ch = source[cursor + 1] if cursor + 1 < length else "\0"
+
+        # 1. State: START
+        if state == "START":
+            start_line = line
+            start_col = col
+
+            # Whitespace
+            if ch in (" ", "\t", "\r", "\n"):
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": char_display(ch),
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "START",
+                    "to_state": "START",
+                    "buffer": "",
+                    "action": f"Ignored whitespace {char_display(ch)}",
+                    "emitted_token": None
+                })
+                if ch == "\n":
+                    line += 1
+                    col = 1
+                else:
+                    col += 1
+                cursor += 1
+                continue
+
+            # Start of Single-Line or Multi-Line Comment
+            if ch == "/" and next_ch in ("/", "*"):
+                is_single = (next_ch == "/")
+                to_st = "IN_COMMENT_SINGLE" if is_single else "IN_COMMENT_MULTI"
+                buffer = ch + next_ch
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": next_ch,
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "START",
+                    "to_state": to_st,
+                    "buffer": buffer,
+                    "action": f"Entering {to_st} on prefix '{buffer}'",
+                    "emitted_token": None
+                })
+                cursor += 2
+                col += 2
+                state = to_st
+                continue
+
+            # Start of Identifier or Keyword
+            if ch.isalpha() or ch == "_":
+                buffer = ch
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "START",
+                    "to_state": "IN_IDENT",
+                    "buffer": buffer,
+                    "action": f"Transition START -> IN_IDENT on letter '{ch}'",
+                    "emitted_token": None
+                })
+                cursor += 1
+                col += 1
+                state = "IN_IDENT"
+                continue
+
+            # Start of Number Literal
+            if ch.isdigit():
+                buffer = ch
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "START",
+                    "to_state": "IN_NUMBER",
+                    "buffer": buffer,
+                    "action": f"Transition START -> IN_NUMBER on digit '{ch}'",
+                    "emitted_token": None
+                })
+                cursor += 1
+                col += 1
+                state = "IN_NUMBER"
+                continue
+
+            # Start of String Literal
+            if ch == '"':
+                buffer = '"'
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "START",
+                    "to_state": "IN_STRING",
+                    "buffer": buffer,
+                    "action": "Transition START -> IN_STRING on opening quote '\"'",
+                    "emitted_token": None
+                })
+                cursor += 1
+                col += 1
+                state = "IN_STRING"
+                continue
+
+            # Start of Character Literal
+            if ch == "'":
+                buffer = "'"
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "START",
+                    "to_state": "IN_CHAR",
+                    "buffer": buffer,
+                    "action": "Transition START -> IN_CHAR on opening quote '\''",
+                    "emitted_token": None
+                })
+                cursor += 1
+                col += 1
+                state = "IN_CHAR"
+                continue
+
+            # Delimiters
+            if ch in (";", ",", "(", ")", "{", "}", "[", "]", ":"):
+                delim_val = ch
+                cursor += 1
+                if ch == ":" and next_ch == ":":
+                    delim_val = "::"
+                    cursor += 1
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor - 1,
+                    "line": line,
+                    "col": col,
+                    "from_state": "START",
+                    "to_state": "EMIT_DELIMITER",
+                    "buffer": delim_val,
+                    "action": f"Emitted Delimiter '{delim_val}'",
+                    "emitted_token": {
+                        "type": "DELIMITER",
+                        "value": delim_val,
+                        "line": line,
+                        "col": col
+                    }
+                })
+                col += len(delim_val)
+                state = "START"
+                continue
+
+            # Operators
+            if ch in ("+", "-", "*", "/", "%", "=", "!", "<", ">", "&", "|", "^", "~", "?"):
+                op_val = ch
+                cursor += 1
+                # Check for double char operator
+                if ch + next_ch in ("++", "--", "+=", "-=", "*=", "/=", "%=", "==", "!=", "<=", ">=", "&&", "||", "->", "<<", ">>"):
+                    op_val = ch + next_ch
+                    cursor += 1
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor - 1,
+                    "line": line,
+                    "col": col,
+                    "from_state": "START",
+                    "to_state": "EMIT_OPERATOR",
+                    "buffer": op_val,
+                    "action": f"Emitted Operator '{op_val}'",
+                    "emitted_token": {
+                        "type": "OPERATOR",
+                        "value": op_val,
+                        "line": line,
+                        "col": col
+                    }
+                })
+                col += len(op_val)
+                state = "START"
+                continue
+
+            # Unrecognized
+            trace.append({
+                "step": len(trace) + 1,
+                "char": ch,
+                "char_display": ch,
+                "next_char": char_display(next_ch),
+                "cursor": cursor,
+                "line": line,
+                "col": col,
+                "from_state": "START",
+                "to_state": "UNKNOWN",
+                "buffer": ch,
+                "action": f"Unrecognized character '{ch}'",
+                "emitted_token": {
+                    "type": "UNKNOWN",
+                    "value": ch,
+                    "line": line,
+                    "col": col
+                }
+            })
+            cursor += 1
+            col += 1
+            state = "START"
+
+        # 2. State: IN_IDENT
+        elif state == "IN_IDENT":
+            if ch.isalnum() or ch == "_":
+                buffer += ch
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_IDENT",
+                    "to_state": "IN_IDENT",
+                    "buffer": buffer,
+                    "action": f"Accumulated identifier character '{ch}' (buffer: '{buffer}')",
+                    "emitted_token": None
+                })
+                cursor += 1
+                col += 1
+            else:
+                # Delimiter or whitespace terminates identifier -> Emit token!
+                t_type = "KEYWORD" if buffer in KEYWORDS else "IDENTIFIER"
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": char_display(ch),
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_IDENT",
+                    "to_state": "START",
+                    "buffer": buffer,
+                    "action": f"Accepted {t_type} '{buffer}'",
+                    "emitted_token": {
+                        "type": t_type,
+                        "value": buffer,
+                        "line": start_line,
+                        "col": start_col
+                    }
+                })
+                buffer = ""
+                state = "START"
+
+        # 3. State: IN_NUMBER
+        elif state == "IN_NUMBER":
+            if ch.isdigit():
+                buffer += ch
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_NUMBER",
+                    "to_state": "IN_NUMBER",
+                    "buffer": buffer,
+                    "action": f"Accumulated digit '{ch}' (buffer: '{buffer}')",
+                    "emitted_token": None
+                })
+                cursor += 1
+                col += 1
+            elif ch == "." and "." not in buffer:
+                buffer += ch
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_NUMBER",
+                    "to_state": "IN_FLOAT",
+                    "buffer": buffer,
+                    "action": "Transition IN_NUMBER -> IN_FLOAT on decimal point '.'",
+                    "emitted_token": None
+                })
+                cursor += 1
+                col += 1
+                state = "IN_FLOAT"
+            else:
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": char_display(ch),
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_NUMBER",
+                    "to_state": "START",
+                    "buffer": buffer,
+                    "action": f"Accepted LITERAL_INT '{buffer}'",
+                    "emitted_token": {
+                        "type": "LITERAL_INT",
+                        "value": buffer,
+                        "line": start_line,
+                        "col": start_col
+                    }
+                })
+                buffer = ""
+                state = "START"
+
+        # 4. State: IN_FLOAT
+        elif state == "IN_FLOAT":
+            if ch.isdigit():
+                buffer += ch
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_FLOAT",
+                    "to_state": "IN_FLOAT",
+                    "buffer": buffer,
+                    "action": f"Accumulated float digit '{ch}' (buffer: '{buffer}')",
+                    "emitted_token": None
+                })
+                cursor += 1
+                col += 1
+            else:
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": char_display(ch),
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_FLOAT",
+                    "to_state": "START",
+                    "buffer": buffer,
+                    "action": f"Accepted LITERAL_FLOAT '{buffer}'",
+                    "emitted_token": {
+                        "type": "LITERAL_FLOAT",
+                        "value": buffer,
+                        "line": start_line,
+                        "col": start_col
+                    }
+                })
+                buffer = ""
+                state = "START"
+
+        # 5. State: IN_STRING
+        elif state == "IN_STRING":
+            buffer += ch
+            if ch == "\\":
+                cursor += 1
+                if cursor < length:
+                    buffer += source[cursor]
+                cursor += 1
+                col += 2
+                continue
+            elif ch == '"':
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": ch,
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_STRING",
+                    "to_state": "START",
+                    "buffer": buffer,
+                    "action": f"Accepted LITERAL_STRING '{buffer}'",
+                    "emitted_token": {
+                        "type": "LITERAL_STRING",
+                        "value": buffer,
+                        "line": start_line,
+                        "col": start_col
+                    }
+                })
+                cursor += 1
+                col += 1
+                buffer = ""
+                state = "START"
+            else:
+                cursor += 1
+                col += 1
+
+        # 6. State: IN_COMMENT_SINGLE
+        elif state == "IN_COMMENT_SINGLE":
+            if ch == "\n":
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": ch,
+                    "char_display": "\\n",
+                    "next_char": char_display(next_ch),
+                    "cursor": cursor,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_COMMENT_SINGLE",
+                    "to_state": "START",
+                    "buffer": buffer,
+                    "action": "End of single-line comment",
+                    "emitted_token": {
+                        "type": "COMMENT",
+                        "value": buffer,
+                        "line": start_line,
+                        "col": start_col
+                    }
+                })
+                line += 1
+                col = 1
+                cursor += 1
+                buffer = ""
+                state = "START"
+            else:
+                buffer += ch
+                cursor += 1
+                col += 1
+
+        # 7. State: IN_COMMENT_MULTI
+        elif state == "IN_COMMENT_MULTI":
+            buffer += ch
+            if ch == "*" and next_ch == "/":
+                buffer += "/"
+                cursor += 2
+                col += 2
+                trace.append({
+                    "step": len(trace) + 1,
+                    "char": "*/",
+                    "char_display": "*/",
+                    "next_char": char_display(source[cursor] if cursor < length else "\0"),
+                    "cursor": cursor - 2,
+                    "line": line,
+                    "col": col,
+                    "from_state": "IN_COMMENT_MULTI",
+                    "to_state": "START",
+                    "buffer": buffer,
+                    "action": "End of multi-line comment",
+                    "emitted_token": {
+                        "type": "COMMENT",
+                        "value": buffer,
+                        "line": start_line,
+                        "col": start_col
+                    }
+                })
+                buffer = ""
+                state = "START"
+            else:
+                if ch == "\n":
+                    line += 1
+                    col = 1
+                else:
+                    col += 1
+                cursor += 1
+
+    return trace
+
+# ============================================================================
 # Public Analysis API
 # ============================================================================
 
@@ -1495,13 +2012,17 @@ def analyze_code(source_code: str, filename: str = "source.cpp") -> Dict[str, An
     analyzer = Analyzer(threshold_loc=50, threshold_nesting=4, threshold_complexity=10)
     result = analyzer.analyze(ast, total_lines, front_end_errors)
 
-    # Format tokens per Step 2 schema: [{"type", "value", "line", "col"}]
+    # Clean tokens
     clean_tokens = [t.to_dict() for t in tokens if t.type != TokenType.EOF]
+
+    # Generate DFA Step-by-Step Execution Trace
+    dfa_trace = generate_dfa_trace(source_code)
 
     return {
         "tokens": clean_tokens,
         "symbol_table": result["symbol_table"],
         "issues": result["issues"],
         "metrics": result["metrics"],
-        "ast": result["ast"]
+        "ast": result["ast"],
+        "dfa_trace": dfa_trace
     }
