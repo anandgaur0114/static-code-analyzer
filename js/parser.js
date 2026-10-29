@@ -3,15 +3,12 @@
  * Part of C++ Static Code Analyzer & Quality Scorer
  */
 
-if (typeof TokenType === 'undefined') {
-    if (typeof globalThis !== 'undefined' && globalThis.TokenType) {
-        var TokenType = globalThis.TokenType;
-        var Token = globalThis.Token;
-    } else if (typeof require !== 'undefined') {
-        const lex = require('./lexer.js');
-        var TokenType = lex.TokenType;
-        var Token = lex.Token;
-    }
+if (typeof globalThis !== 'undefined' && typeof globalThis.TokenType === 'undefined' && typeof require !== 'undefined') {
+    try {
+        const _lex = require('./lexer.js');
+        globalThis.TokenType = _lex.TokenType;
+        globalThis.Token = _lex.Token;
+    } catch (e) {}
 }
 
 class ASTNode {

@@ -93,6 +93,12 @@ export default function EditorPanel({
           language="cpp"
           theme={isDark ? "vs-dark" : "light"}
           value={code}
+          loading={
+            <div className="flex flex-col items-center justify-center h-full text-dark-400 gap-2">
+              <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-xs">Loading Code Studio...</span>
+            </div>
+          }
           onChange={(val) => onChange(val || '')}
           onMount={handleEditorDidMount}
           options={{

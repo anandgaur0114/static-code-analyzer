@@ -13,8 +13,8 @@ start "CodeAccuracy React Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
 
 echo.
 echo ======================================================================
-echo Both servers launched successfully!
+echo Both servers launched! Waiting for Vite to initialize...
 echo Open your browser at: http://localhost:5173
 echo ======================================================================
-timeout /t 4
+timeout /t 6 >nul
 start http://localhost:5173

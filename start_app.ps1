@@ -13,7 +13,17 @@ Start-Sleep -Seconds 2
 Write-Host "[2/2] Launching React + Vite Frontend on http://localhost:5173..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$PSScriptRoot\frontend'; npm run dev"
 
-Start-Sleep -Seconds 3
+Write-Host "Waiting for dev servers to initialize..." -ForegroundColor Cyan
+$retries = 0
+$connected = $false
+while (-not $connected -and $retries -lt 12) {
+    Start-Sleep -Seconds 1
+    try {
+        $res = Invoke-WebRequest -Uri "http://localhost:5173" -UseBasicParsing -TimeoutSec 1 -ErrorAction SilentlyContinue
+        if ($res.StatusCode -eq 200) { $connected = $true }
+    } catch {}
+    $retries++
+}
 
 Write-Host "Opening web application in default browser..." -ForegroundColor Green
 Start-Process "http://localhost:5173"
